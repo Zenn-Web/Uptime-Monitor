@@ -7,6 +7,9 @@
 <div>
         @foreach ($monitors as $monitor)
         <div>{{ $monitor->url }}</div>
+        <div>{{ $monitor->name }}</div>
+        <div>{{ $monitor->last_checked_at?->diffForHumans() ?? 'cek dulu lewat scheduler' }}</div>
+
         <div @class([
             'Monitor status',
             'bg-green-500' => $monitor->is_up,
