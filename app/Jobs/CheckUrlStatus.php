@@ -6,6 +6,7 @@ use App\Models\Monitor;
 use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 class CheckUrlStatus implements ShouldQueue
@@ -20,19 +21,44 @@ class CheckUrlStatus implements ShouldQueue
     public function handle() :void
     {
         $StatusSebelumnya = $this->monitor->is_up;
+        $StatusSekarang = false;
+        $Catatan = null;
 
         try {
-            $response = Http::get($this->monitor->url);
-            $this->monitor->is_up = $response->status() === $this->monitor->expected_status;
-        } catch (\Exception $e) {
-            $this->monitor->is_up = false;
+            $response = Http::timeout(10)->get($this->monitor->url);
+            $StatusSekarang = $response->status() === $this->monitor->expected_status;
+           if (! $StatusSekarang) {
+            $Catatan = "HTTP status diterima: {response->status()}";
+           }
+        } catch (ConnectionException $exception) {
+            $StatusSekarang = false;
+            $Catatan = substr($exception->getMessage(), 0, 255);
         }
         
-        $this->monitor->last_checked_at = now();
-        $this->monitor->save(); 
+        $this->monitor->update(['is_up' => $StatusSekarang, 'last_checked_at' => now(),]);
         
-        if ($StatusSebelumnya && !$this->monitor->is_up) {
-            User::first()->notify(new \App\Notifications\UrlDownNotification($this->monitor));
+        if ($StatusSebelumnya && !$StatusSekarang) {
+           $this->monitor->incidents()->create(['status' => 'down', 
+           'detected_at' => now(), 
+           'note' => $Catatan,
+           ]);
+
+           User::first()?->notify(
+                new \App\Notifications\UrlDownNotification($this->monitor)
+           );
+        }
+
+        if (! $StatusSebelumnya && $StatusSekarang) {
+            $incident = $this->monitor->incidents()
+            ->where('status', 'down')
+            ->whereNull('resolved_at')
+            ->latest('detected_at')
+            ->first();
+
+            $incident?->update([
+                'status' => 'recovered',
+                'resolved_at' => now(),
+            ]);
         }
     }
 }

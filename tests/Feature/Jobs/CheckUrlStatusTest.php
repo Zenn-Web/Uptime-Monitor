@@ -110,4 +110,56 @@ class CheckUrlStatusTest extends TestCase
             1
         );
     }
+
+    public function test_incident_is_created_when_monitor_goes_down(): void
+    {
+        Notification::fake();
+
+        Http::fake(['https://example.com' => Http::response('', 500)]);
+
+        User::factory()->create();
+
+        $monitor = Monitor::factory()->create([
+            'is_up' => true,
+            'url' => 'https://example.com',
+            'expected_status' => 200,
+        ]);
+
+        (new CheckUrlStatus($monitor))->handle();
+
+        $this->assertDatabaseHas('incidents', 
+        ['monitor_id' => $monitor->id, 
+        'status' => 'down', 
+        ]);
+    }
+
+    public function test_incident_is_marked_as_recovered(): void
+    {
+        Http::fake([
+        'https://example.com' => Http::response('', 200),
+        ]);
+
+        $monitor = Monitor::factory()->create([
+        'is_up' => false,
+        'url' => 'https://example.com',
+        'expected_status' => 200,
+        ]);
+
+        $incident = $monitor->incidents()->create([
+        'status' => 'down',
+        'detected_at' => now()->subMinutes(10),
+        'note' => 'Website tidak merespons',
+        ]);
+
+        (new CheckUrlStatus($monitor))->handle();
+
+        $this->assertDatabaseHas('incidents', [
+        'id' => $incident->id,
+        'status' => 'recovered',
+        ]);
+
+        $this->assertNotNull(
+        $incident->fresh()->resolved_at
+        );
+    }
 }
