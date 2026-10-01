@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['status', 'detected_at', 'resloved_at', 'note'])]
+#[Fillable(['status', 'detected_at', 'resolved_at', 'note'])]
 class Incident extends Model
 {
     

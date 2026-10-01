@@ -83,4 +83,12 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
     }
+
+    public function test_guest_cannot_access_dashboard(): void
+
+    {
+    $this->get('/dashboard')
+        ->assertRedirect('/login');
+    }
+    
 }

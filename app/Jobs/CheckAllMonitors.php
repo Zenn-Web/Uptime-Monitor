@@ -6,6 +6,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use App\Models\Monitor;
 
+
 class CheckAllMonitors implements ShouldQueue
 {
     use Queueable;

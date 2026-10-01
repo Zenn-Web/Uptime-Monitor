@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-#[Fillable(['name', 'url', 'expected_status'])]
+#[Fillable(['name', 'url', 'expected_status', 'is_up', 'last_checked_at'])]
 class Monitor extends Model
 {
     use HasFactory;

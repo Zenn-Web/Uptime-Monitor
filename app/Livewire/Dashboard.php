@@ -7,17 +7,18 @@ use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use App\Models\Monitor;
+use App\Models\Incident;
 
     #[Layout('layouts.app')]
     class Dashboard extends Component {
         #[Validate('required|string|max:255')]
-        public $namaField;
+        public String $namaField = '';
 
         #[Validate('required|url|max:255')]
-        public $urlField;
+        public String $urlField = '';
 
         #[Validate('required|integer|min:100|max:599')]
-        public $statusField;
+        public String $statusField = '200';
 
         public function store() {
             $this->validate();
@@ -33,6 +34,15 @@ use App\Models\Monitor;
 
         public function render() {
             $monitors = Monitor::all();
-            return view('livewire.dashboard', compact('monitors'));
+
+            $incidents = Incident::with('monitor')
+            ->latest('detected_at')
+            ->limit(10)
+            ->get();
+
+            return view('livewire.dashboard', [
+                'monitors' => $monitors,
+                'incidents' => $incidents,
+            ]);
         }
     }
